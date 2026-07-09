@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { deleteSubject } from "@/app/teacher/curriculum/actions";
-import type { SubjectWithSubcategories } from "@/lib/types";
+import type { Subject } from "@/lib/types";
 
 type DeleteSubjectModalProps = {
-  subject: SubjectWithSubcategories;
+  subject: Subject;
   isOpen: boolean;
   onClose: () => void;
 };
@@ -64,8 +64,8 @@ export function DeleteSubjectModal({
         </header>
 
         <p className="mb-10 text-base font-light leading-relaxed text-zinc-600">
-          Θα διαγραφούν οριστικά όλες οι υποκατηγορίες και όλοι οι βαθμοί που
-          σχετίζονται με αυτό το μάθημα.
+          Θα διαγραφούν οριστικά όλοι οι βαθμοί που σχετίζονται με αυτό το
+          μάθημα.
         </p>
 
         <form action={formAction} className="space-y-6">

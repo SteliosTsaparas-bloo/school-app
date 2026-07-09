@@ -7,8 +7,6 @@ import { AddStudentModal } from "./AddStudentModal";
 import { DeleteStudentModal } from "./DeleteStudentModal";
 import { EditStudentModal } from "./EditStudentModal";
 import { QrLinkModal } from "./QrLinkModal";
-import { StudentGradesModal } from "./StudentGradesModal";
-
 type StudentsTableProps = {
   students: StudentRow[];
 };
@@ -28,7 +26,6 @@ function sortStudents(students: StudentRow[]) {
 export function StudentsTable({ students: initialStudents }: StudentsTableProps) {
   const [students, setStudents] = useState(initialStudents);
   const [qrStudent, setQrStudent] = useState<StudentRow | null>(null);
-  const [gradeStudent, setGradeStudent] = useState<StudentRow | null>(null);
   const [editStudent, setEditStudent] = useState<StudentRow | null>(null);
   const [deleteStudent, setDeleteStudent] = useState<StudentRow | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -105,13 +102,6 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
                         >
                           Προβολή QR & Link
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setGradeStudent(student)}
-                          className="border border-zinc-900 px-4 py-2 text-sm text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
-                        >
-                          Καταχώρηση Βαθμολογίας
-                        </button>
                       </div>
                       <div className="flex gap-4 text-sm">
                         <button
@@ -173,15 +163,6 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
         />
       )}
 
-      {gradeStudent && (
-        <StudentGradesModal
-          key={gradeStudent.id}
-          studentId={gradeStudent.id}
-          studentName={gradeStudent.name}
-          isOpen={Boolean(gradeStudent)}
-          onClose={() => setGradeStudent(null)}
-        />
-      )}
     </>
   );
 }

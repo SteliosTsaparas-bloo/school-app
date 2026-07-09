@@ -1,61 +1,16 @@
-import type { Student } from "@/lib/types";
-import {
-  getCurriculum,
-  parseStudentDashboardPayload,
-  buildSubjectsWithGrades,
-} from "@/lib/data/curriculum";
+import { getStudentDashboardByToken, parseStudentDashboardPayload } from "@/lib/data/grades";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export type StudentRow = Student;
+export type StudentRow = {
+  id: string;
+  name: string;
+  unique_token: string;
+  created_at: string;
+};
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-async function getStudentDashboardViaAdmin(token: string) {
-  const supabase = createAdminClient();
-
-  const { data: student, error: studentError } = await supabase
-    .from("students")
-    .select("id, name, unique_token, created_at")
-    .eq("unique_token", token)
-    .maybeSingle();
-
-  if (studentError || !student) {
-    return null;
-  }
-
-  const curriculum = await getCurriculum();
-  const { data: entries, error: entriesError } = await supabase
-    .from("grade_entries")
-    .select("id, subcategory_id, grade, entry_date")
-    .eq("student_id", student.id);
-
-  if (entriesError) {
-    return { student, subjects: curriculum.map((subject) => ({
-      ...subject,
-      subcategories: subject.subcategories.map((subcategory) => ({
-        id: subcategory.id,
-        name: subcategory.name,
-        sort_order: subcategory.sort_order,
-        average: null,
-        entries: [],
-      })),
-    })) };
-  }
-
-  const subjects = buildSubjectsWithGrades(
-    curriculum,
-    (entries ?? []).map((entry) => ({
-      id: entry.id,
-      subcategory_id: entry.subcategory_id,
-      grade: entry.grade,
-      entry_date: entry.entry_date,
-    })),
-  );
-
-  return { student, subjects };
-}
 
 async function getStudentDashboardViaRpc(token: string) {
   const supabase = await createClient();
@@ -81,7 +36,7 @@ export async function getStudentDashboard(token: string) {
   }
 
   try {
-    const dashboard = await getStudentDashboardViaAdmin(normalizedToken);
+    const dashboard = await getStudentDashboardByToken(normalizedToken);
     if (dashboard) {
       return dashboard;
     }
