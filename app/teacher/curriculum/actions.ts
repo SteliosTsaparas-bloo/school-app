@@ -262,6 +262,79 @@ export async function addGradeEntry(
   return { success: true };
 }
 
+export async function updateGradeEntry(
+  _prevState: ActionResult | undefined,
+  formData: FormData,
+): Promise<ActionResult> {
+  const authError = await assertTeacher();
+  if (authError) return authError;
+
+  const entryId = formData.get("entryId");
+  const gradeValue = formData.get("grade");
+  const entryDate = formData.get("entryDate");
+
+  if (typeof entryId !== "string" || !entryId) {
+    return { error: "Μη έγκυρη καταχώρηση." };
+  }
+
+  if (typeof gradeValue !== "string" || !gradeValue.trim()) {
+    return { error: "Ο βαθμός είναι υποχρεωτικός." };
+  }
+
+  if (typeof entryDate !== "string" || !entryDate.trim()) {
+    return { error: "Η ημερομηνία είναι υποχρεωτική." };
+  }
+
+  const grade = Number(gradeValue.replace(",", "."));
+  if (Number.isNaN(grade) || grade < 0 || grade > 10) {
+    return { error: "Ο βαθμός πρέπει να είναι μεταξύ 0 και 10." };
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("grade_entries")
+    .select("id, student_id, subcategory_id, entry_date")
+    .eq("id", entryId)
+    .single();
+
+  if (fetchError || !existing) {
+    return { error: "Η καταχώρηση δεν βρέθηκε." };
+  }
+
+  if (entryDate !== existing.entry_date) {
+    const { data: conflict } = await supabase
+      .from("grade_entries")
+      .select("id")
+      .eq("student_id", existing.student_id)
+      .eq("subcategory_id", existing.subcategory_id)
+      .eq("entry_date", entryDate)
+      .neq("id", entryId)
+      .maybeSingle();
+
+    if (conflict) {
+      return {
+        error: "Υπάρχει ήδη καταχώρηση για αυτή την ημερομηνία σε αυτή την υποκατηγορία.",
+      };
+    }
+  }
+
+  const { error } = await supabase
+    .from("grade_entries")
+    .update({
+      grade,
+      entry_date: entryDate,
+    })
+    .eq("id", entryId);
+
+  if (error) {
+    return { error: "Αποτυχία ενημέρωσης βαθμού." };
+  }
+
+  revalidateCurriculumPaths();
+  return { success: true };
+}
+
 export async function deleteGradeEntry(
   _prevState: ActionResult | undefined,
   formData: FormData,

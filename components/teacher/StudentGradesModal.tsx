@@ -5,9 +5,21 @@ import {
   addGradeEntry,
   deleteGradeEntry,
   loadStudentGrades,
+  updateGradeEntry,
 } from "@/app/teacher/curriculum/actions";
+import type { ActionResult } from "@/app/teacher/curriculum/actions";
 import type { SubjectWithGrades } from "@/lib/types";
-import { formatGrade, formatShortDate } from "@/lib/utils/grades";
+import { formatGrade } from "@/lib/utils/grades";
+
+type GradeEntry = SubjectWithGrades["subcategories"][number]["entries"][number];
+
+function toDateInputValue(dateString: string) {
+  return dateString.slice(0, 10);
+}
+
+function isSuccess(state: ActionResult | undefined) {
+  return Boolean(state?.success);
+}
 
 type StudentGradesModalProps = {
   studentId: string;
@@ -28,10 +40,10 @@ function GradeEntryForm({
   const [state, formAction, isPending] = useActionState(addGradeEntry, undefined);
 
   useEffect(() => {
-    if (state && "success" in state && state.success) {
+    if (isSuccess(state)) {
       onReload();
     }
-  }, [state?.success, onReload]);
+  }, [state, onReload]);
 
   return (
     <form action={formAction} className="mt-4 flex flex-col gap-3 border-t border-zinc-100 pt-4 sm:flex-row sm:items-end">
@@ -73,33 +85,117 @@ function GradeEntryRow({
   entry,
   onReload,
 }: {
-  entry: SubjectWithGrades["subcategories"][number]["entries"][number];
+  entry: GradeEntry;
   onReload: () => void;
 }) {
-  const [state, formAction, isPending] = useActionState(deleteGradeEntry, undefined);
+  const [isEditing, setIsEditing] = useState(false);
+  const [updateState, updateAction, isUpdating] = useActionState(
+    updateGradeEntry,
+    undefined,
+  );
+  const [deleteState, deleteAction, isDeleting] = useActionState(
+    deleteGradeEntry,
+    undefined,
+  );
 
   useEffect(() => {
-    if (state && "success" in state && state.success) {
+    if (isSuccess(updateState)) {
+      setIsEditing(false);
       onReload();
     }
-  }, [state?.success, onReload]);
+  }, [updateState, onReload]);
+
+  useEffect(() => {
+    if (isSuccess(deleteState)) {
+      onReload();
+    }
+  }, [deleteState, onReload]);
+
+  if (isEditing) {
+    return (
+      <li className="py-3">
+        <form
+          action={updateAction}
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
+          <input type="hidden" name="entryId" value={entry.id} />
+          <div className="flex-1">
+            <label className="mb-1 block text-xs text-zinc-500">Ημερομηνία</label>
+            <input
+              type="date"
+              name="entryDate"
+              defaultValue={toDateInputValue(entry.entry_date)}
+              required
+              className="w-full border-b border-zinc-200 bg-transparent py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900"
+            />
+          </div>
+          <div className="w-full sm:w-28">
+            <label className="mb-1 block text-xs text-zinc-500">Βαθμός</label>
+            <input
+              name="grade"
+              type="text"
+              inputMode="decimal"
+              defaultValue={String(entry.grade)}
+              required
+              className="w-full border-b border-zinc-200 bg-transparent py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="border border-zinc-200 px-3 py-2 text-sm text-zinc-700"
+            >
+              Ακύρωση
+            </button>
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="border border-zinc-900 px-3 py-2 text-sm text-zinc-900 hover:bg-zinc-900 hover:text-white disabled:opacity-50"
+            >
+              {isUpdating ? "..." : "Αποθήκευση"}
+            </button>
+          </div>
+        </form>
+        {updateState?.error && (
+          <p className="mt-2 text-sm text-red-600">{updateState.error}</p>
+        )}
+      </li>
+    );
+  }
 
   return (
-    <li className="flex items-center justify-between gap-4 py-2 text-sm">
-      <span className="text-zinc-500">{formatShortDate(entry.entry_date)}</span>
-      <div className="flex items-center gap-4">
+    <li className="flex flex-wrap items-center justify-between gap-4 py-2 text-sm">
+      <span className="text-zinc-500">
+        {new Intl.DateTimeFormat("el-GR", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }).format(new Date(entry.entry_date))}
+      </span>
+      <div className="flex items-center gap-3">
         <span className="tabular-nums text-zinc-900">{formatGrade(entry.grade)}</span>
-        <form action={formAction}>
+        <button
+          type="button"
+          onClick={() => setIsEditing(true)}
+          className="text-zinc-500 hover:text-zinc-900"
+        >
+          Επεξεργασία
+        </button>
+        <form action={deleteAction}>
           <input type="hidden" name="entryId" value={entry.id} />
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isDeleting}
             className="text-zinc-400 hover:text-red-600"
           >
             Διαγραφή
           </button>
         </form>
       </div>
+      {deleteState?.error && (
+        <p className="w-full text-sm text-red-600">{deleteState.error}</p>
+      )}
     </li>
   );
 }
