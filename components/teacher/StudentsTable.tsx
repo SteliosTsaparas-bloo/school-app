@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { StudentWithGrades } from "@/lib/data/students";
 import { getStudentUrl } from "@/lib/utils/url";
 import { AddStudentModal } from "./AddStudentModal";
+import { DeleteStudentModal } from "./DeleteStudentModal";
+import { EditStudentModal } from "./EditStudentModal";
 import { GradeModal } from "./GradeModal";
 import { QrLinkModal } from "./QrLinkModal";
 
@@ -19,10 +21,20 @@ function formatDate(dateString: string) {
   }).format(new Date(dateString));
 }
 
+function sortStudents(students: StudentWithGrades[]) {
+  return [...students].sort((a, b) => a.name.localeCompare(b.name, "el"));
+}
+
 export function StudentsTable({ students: initialStudents }: StudentsTableProps) {
   const [students, setStudents] = useState(initialStudents);
   const [qrStudent, setQrStudent] = useState<StudentWithGrades | null>(null);
   const [gradeStudent, setGradeStudent] = useState<StudentWithGrades | null>(
+    null,
+  );
+  const [editStudent, setEditStudent] = useState<StudentWithGrades | null>(
+    null,
+  );
+  const [deleteStudent, setDeleteStudent] = useState<StudentWithGrades | null>(
     null,
   );
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -32,10 +44,20 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
   }, [initialStudents]);
 
   function handleStudentCreated(student: StudentWithGrades) {
-    setStudents((current) =>
-      [...current, student].sort((a, b) => a.name.localeCompare(b.name, "el")),
-    );
+    setStudents((current) => sortStudents([...current, student]));
     setQrStudent(student);
+  }
+
+  function handleStudentUpdated(student: StudentWithGrades) {
+    setStudents((current) =>
+      sortStudents(
+        current.map((entry) => (entry.id === student.id ? student : entry)),
+      ),
+    );
+  }
+
+  function handleStudentDeleted(studentId: string) {
+    setStudents((current) => current.filter((entry) => entry.id !== studentId));
   }
 
   return (
@@ -61,7 +83,7 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
         </div>
       ) : (
         <div className="overflow-x-auto border border-zinc-200 bg-white">
-          <table className="w-full min-w-[640px] text-left">
+          <table className="w-full min-w-[720px] text-left">
             <thead>
               <tr className="border-b border-zinc-200">
                 <th className="px-6 py-4 text-xs font-normal tracking-[0.15em] text-zinc-500 uppercase">
@@ -93,21 +115,39 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
                     {formatDate(student.created_at)}
                   </td>
                   <td className="px-6 py-5">
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => setQrStudent(student)}
-                        className="border border-zinc-200 px-4 py-2 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:text-zinc-900"
-                      >
-                        Προβολή QR & Link
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGradeStudent(student)}
-                        className="border border-zinc-900 px-4 py-2 text-sm text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
-                      >
-                        Καταχώρηση Βαθμολογίας
-                      </button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setQrStudent(student)}
+                          className="border border-zinc-200 px-4 py-2 text-sm text-zinc-700 transition-colors hover:border-zinc-300 hover:text-zinc-900"
+                        >
+                          Προβολή QR & Link
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGradeStudent(student)}
+                          className="border border-zinc-900 px-4 py-2 text-sm text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+                        >
+                          Καταχώρηση Βαθμολογίας
+                        </button>
+                      </div>
+                      <div className="flex gap-4 text-sm">
+                        <button
+                          type="button"
+                          onClick={() => setEditStudent(student)}
+                          className="text-zinc-500 transition-colors hover:text-zinc-900"
+                        >
+                          Επεξεργασία
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteStudent(student)}
+                          className="text-zinc-400 transition-colors hover:text-red-600"
+                        >
+                          Διαγραφή
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -122,6 +162,26 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
         onClose={() => setIsAddOpen(false)}
         onStudentCreated={handleStudentCreated}
       />
+
+      {editStudent && (
+        <EditStudentModal
+          key={editStudent.id}
+          student={editStudent}
+          isOpen={Boolean(editStudent)}
+          onClose={() => setEditStudent(null)}
+          onStudentUpdated={handleStudentUpdated}
+        />
+      )}
+
+      {deleteStudent && (
+        <DeleteStudentModal
+          key={deleteStudent.id}
+          student={deleteStudent}
+          isOpen={Boolean(deleteStudent)}
+          onClose={() => setDeleteStudent(null)}
+          onStudentDeleted={handleStudentDeleted}
+        />
+      )}
 
       {qrStudent && (
         <QrLinkModal
