@@ -11,6 +11,17 @@ export type Subject = {
   sort_order: number;
 };
 
+export type Subcategory = {
+  id: string;
+  subject_id: string;
+  name: string;
+  sort_order: number;
+};
+
+export type SubjectWithSubcategories = Subject & {
+  subcategories: Subcategory[];
+};
+
 export type GradeRecord = {
   id: string;
   student_id: string;

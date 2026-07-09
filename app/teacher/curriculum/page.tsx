@@ -1,18 +1,18 @@
-import { getSubjects } from "@/lib/data/grades";
-import { CurriculumManager } from "@/components/teacher/CurriculumManager";
-import type { Subject } from "@/lib/types";
+﻿import { CurriculumManager } from "@/components/teacher/CurriculumManager";
+import type { SubjectWithSubcategories } from "@/lib/types";
+import { getCurriculum } from "@/lib/data/curriculum";
 
 export const dynamic = "force-dynamic";
 
 export default async function CurriculumPage() {
-  let subjects: Subject[] = [];
+  let curriculum: SubjectWithSubcategories[] = [];
   let configError: string | null = null;
 
   try {
-    subjects = await getSubjects();
+    curriculum = await getCurriculum();
   } catch {
     configError =
-      "Δεν ήταν δυνατή η φόρτωση των μαθημάτων. Βεβαιωθείτε ότι έχετε τρέξει το migration_003_spreadsheet_grades.sql.";
+      "Δεν ήταν δυνατή η φόρτωση των μαθημάτων. Βεβαιωθείτε ότι έχετε τρέξει το migration_004_restore_subcategories.sql.";
   }
 
   return (
@@ -25,7 +25,8 @@ export default async function CurriculumPage() {
           Μαθήματα
         </h1>
         <p className="mt-4 max-w-2xl text-base font-light text-zinc-600">
-          Προσθέστε, επεξεργαστείτε ή διαγράψτε τα μαθήματα του βαθμολογίου.
+          Προσθέστε, επεξεργαστείτε ή διαγράψτε μαθήματα και τις υποκατηγορίες
+          τους. Οι αλλαγές εμφανίζονται αυτόματα στη βαθμολογία των μαθητών.
         </p>
       </header>
 
@@ -35,7 +36,7 @@ export default async function CurriculumPage() {
         </div>
       )}
 
-      <CurriculumManager initialSubjects={subjects} />
+      <CurriculumManager initialCurriculum={curriculum} />
     </div>
   );
 }

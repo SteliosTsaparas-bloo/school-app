@@ -2,22 +2,24 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
-import { deleteSubject } from "@/app/teacher/curriculum/actions";
-import type { SubjectWithSubcategories } from "@/lib/types";
+import { deleteSubcategory } from "@/app/teacher/curriculum/actions";
+import type { Subcategory } from "@/lib/types";
 
-type DeleteSubjectModalProps = {
-  subject: SubjectWithSubcategories;
+type DeleteSubcategoryModalProps = {
+  subcategory: Subcategory;
+  subjectName: string;
   isOpen: boolean;
   onClose: () => void;
 };
 
-export function DeleteSubjectModal({
-  subject,
+export function DeleteSubcategoryModal({
+  subcategory,
+  subjectName,
   isOpen,
   onClose,
-}: DeleteSubjectModalProps) {
+}: DeleteSubcategoryModalProps) {
   const router = useRouter();
-  const [state, formAction, isPending] = useActionState(deleteSubject, undefined);
+  const [state, formAction, isPending] = useActionState(deleteSubcategory, undefined);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -56,20 +58,19 @@ export function DeleteSubjectModal({
       <div className="relative w-full max-w-md border border-zinc-200 bg-white p-10">
         <header className="mb-6">
           <p className="mb-2 text-sm tracking-[0.15em] text-zinc-500 uppercase">
-            Διαγραφή μαθήματος
+            Διαγραφή υποκατηγορίας · {subjectName}
           </p>
           <h2 className="text-2xl font-light tracking-tight text-zinc-900">
-            {subject.name}
+            {subcategory.name}
           </h2>
         </header>
 
         <p className="mb-10 text-base font-light leading-relaxed text-zinc-600">
-          Θα διαγραφούν οριστικά όλες οι υποκατηγορίες και όλοι οι βαθμοί που
-          σχετίζονται με αυτό το μάθημα.
+          Η υποκατηγορία θα διαγραφεί οριστικά.
         </p>
 
         <form action={formAction} className="space-y-6">
-          <input type="hidden" name="subjectId" value={subject.id} />
+          <input type="hidden" name="subcategoryId" value={subcategory.id} />
           {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
