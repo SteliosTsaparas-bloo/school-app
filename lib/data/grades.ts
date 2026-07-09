@@ -1,11 +1,11 @@
 import type {
-  AssessmentGrade,
   GradeRecord,
   SpreadsheetColumn,
   SpreadsheetData,
   StudentDashboard,
   Subject,
-  SubjectWithAssessments,
+  SubjectWithGrades,
+  SubcategoryGrade,
 } from "@/lib/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -28,32 +28,56 @@ export async function getSubjects() {
 export async function getSpreadsheetData(subjectId: string) {
   const supabase = createAdminClient();
 
-  const [{ data: students, error: studentsError }, { data: subjects, error: subjectsError }, { data: grades, error: gradesError }] =
-    await Promise.all([
-      supabase.from("students").select("id, name, unique_token, created_at").order("name"),
-      supabase.from("subjects").select("id, name, sort_order").order("sort_order").order("name"),
-      supabase
-        .from("grades")
-        .select("id, student_id, subject_id, grade, comments, assessment_date, updated_at")
-        .eq("subject_id", subjectId)
-        .order("assessment_date", { ascending: true }),
-    ]);
+  const [
+    { data: students, error: studentsError },
+    { data: subjects, error: subjectsError },
+    { data: subcategories, error: subcategoriesError },
+  ] = await Promise.all([
+    supabase.from("students").select("id, name, unique_token, created_at").order("name"),
+    supabase.from("subjects").select("id, name, sort_order").order("sort_order").order("name"),
+    supabase
+      .from("subcategories")
+      .select("id, subject_id, name, sort_order")
+      .eq("subject_id", subjectId)
+      .order("sort_order")
+      .order("name"),
+  ]);
 
-  if (studentsError || subjectsError || gradesError) {
-    throw studentsError ?? subjectsError ?? gradesError;
+  if (studentsError || subjectsError || subcategoriesError) {
+    throw studentsError ?? subjectsError ?? subcategoriesError;
   }
 
-  const dates = Array.from(
-    new Set((grades ?? []).map((grade) => grade.assessment_date as string)),
-  ).sort();
+  const subcategoryIds = (subcategories ?? []).map((subcategory) => subcategory.id);
+  let gradeRows: Array<{
+    id: string;
+    student_id: string;
+    subcategory_id: string;
+    grade: number | string | null;
+    comments: string | null;
+    updated_at: string;
+  }> = [];
 
-  const columns: SpreadsheetColumn[] = dates.map((assessment_date) => {
+  if (subcategoryIds.length > 0) {
+    const { data: grades, error: gradesError } = await supabase
+      .from("grades")
+      .select("id, student_id, subcategory_id, grade, comments, updated_at")
+      .in("subcategory_id", subcategoryIds);
+
+    if (gradesError) {
+      throw gradesError;
+    }
+
+    gradeRows = grades ?? [];
+  }
+
+  const columns: SpreadsheetColumn[] = (subcategories ?? []).map((subcategory) => {
     const cells: SpreadsheetColumn["cells"] = {};
 
     for (const student of students ?? []) {
-      const record = (grades ?? []).find(
+      const record = gradeRows.find(
         (grade) =>
-          grade.student_id === student.id && grade.assessment_date === assessment_date,
+          grade.student_id === student.id &&
+          grade.subcategory_id === subcategory.id,
       );
 
       cells[student.id] = {
@@ -63,7 +87,12 @@ export async function getSpreadsheetData(subjectId: string) {
       };
     }
 
-    return { assessment_date, cells };
+    return {
+      subcategory_id: subcategory.id,
+      subcategory_name: subcategory.name,
+      sort_order: subcategory.sort_order,
+      cells,
+    };
   });
 
   return {
@@ -73,26 +102,36 @@ export async function getSpreadsheetData(subjectId: string) {
   } satisfies SpreadsheetData;
 }
 
-function parseAssessment(assessment: {
-  assessment_date: string;
+function parseSubcategoryGrade(subcategory: {
+  id: string;
+  name: string;
+  sort_order: number;
   grade: number | string | null;
   comments: string | null;
-  updated_at: string;
-}): AssessmentGrade {
+  updated_at: string | null;
+}): SubcategoryGrade {
   return {
-    assessment_date: assessment.assessment_date,
+    id: subcategory.id,
+    name: subcategory.name,
+    sort_order: subcategory.sort_order,
     grade:
-      assessment.grade === null || assessment.grade === undefined
+      subcategory.grade === null || subcategory.grade === undefined
         ? null
-        : Number(assessment.grade),
-    comments: assessment.comments,
-    updated_at: assessment.updated_at,
+        : Number(subcategory.grade),
+    comments: subcategory.comments,
+    updated_at: subcategory.updated_at,
   };
 }
 
 export function buildStudentDashboard(
   student: StudentDashboard["student"],
   subjects: Subject[],
+  subcategories: Array<{
+    id: string;
+    subject_id: string;
+    name: string;
+    sort_order: number;
+  }>,
   grades: GradeRecord[],
 ): StudentDashboard {
   return {
@@ -101,20 +140,25 @@ export function buildStudentDashboard(
       id: subject.id,
       name: subject.name,
       sort_order: subject.sort_order,
-      assessments: grades
-        .filter((grade) => grade.subject_id === subject.id)
-        .map((grade) =>
-          parseAssessment({
-            assessment_date: grade.assessment_date,
-            grade: grade.grade,
-            comments: grade.comments,
-            updated_at: grade.updated_at,
-          }),
-        )
+      subcategories: subcategories
+        .filter((subcategory) => subcategory.subject_id === subject.id)
+        .map((subcategory) => {
+          const record = grades.find(
+            (grade) => grade.subcategory_id === subcategory.id,
+          );
+
+          return parseSubcategoryGrade({
+            id: subcategory.id,
+            name: subcategory.name,
+            sort_order: subcategory.sort_order,
+            grade: record?.grade ?? null,
+            comments: record?.comments ?? null,
+            updated_at: record?.updated_at ?? null,
+          });
+        })
         .sort(
           (a, b) =>
-            new Date(b.assessment_date).getTime() -
-            new Date(a.assessment_date).getTime(),
+            a.sort_order - b.sort_order || a.name.localeCompare(b.name, "el"),
         ),
     })),
   };
@@ -126,11 +170,13 @@ export function parseStudentDashboardPayload(payload: {
     id: string;
     name: string;
     sort_order: number;
-    assessments: Array<{
-      assessment_date: string;
+    subcategories: Array<{
+      id: string;
+      name: string;
+      sort_order: number;
       grade: number | string | null;
       comments: string | null;
-      updated_at: string;
+      updated_at: string | null;
     }>;
   }>;
 }): StudentDashboard {
@@ -140,7 +186,12 @@ export function parseStudentDashboardPayload(payload: {
       id: subject.id,
       name: subject.name,
       sort_order: subject.sort_order,
-      assessments: (subject.assessments ?? []).map(parseAssessment),
+      subcategories: (subject.subcategories ?? [])
+        .map(parseSubcategoryGrade)
+        .sort(
+          (a, b) =>
+            a.sort_order - b.sort_order || a.name.localeCompare(b.name, "el"),
+        ),
     })),
   };
 }
@@ -158,29 +209,34 @@ export async function getStudentDashboardByToken(token: string) {
     return null;
   }
 
-  const [subjects, { data: grades, error: gradesError }] = await Promise.all([
-    getSubjects(),
-    supabase
-      .from("grades")
-      .select("id, student_id, subject_id, grade, comments, assessment_date, updated_at")
-      .eq("student_id", student.id)
-      .order("assessment_date", { ascending: false }),
-  ]);
+  const [subjects, { data: subcategories, error: subcategoriesError }, { data: grades, error: gradesError }] =
+    await Promise.all([
+      getSubjects(),
+      supabase
+        .from("subcategories")
+        .select("id, subject_id, name, sort_order")
+        .order("sort_order")
+        .order("name"),
+      supabase
+        .from("grades")
+        .select("id, student_id, subcategory_id, grade, comments, updated_at")
+        .eq("student_id", student.id),
+    ]);
 
-  if (gradesError) {
-    throw gradesError;
+  if (subcategoriesError || gradesError) {
+    throw subcategoriesError ?? gradesError;
   }
 
   return buildStudentDashboard(
     student,
     subjects,
+    subcategories ?? [],
     (grades ?? []).map((grade) => ({
       id: grade.id,
       student_id: grade.student_id,
-      subject_id: grade.subject_id,
+      subcategory_id: grade.subcategory_id,
       grade: grade.grade == null ? null : Number(grade.grade),
       comments: grade.comments,
-      assessment_date: grade.assessment_date,
       updated_at: grade.updated_at,
     })),
   );

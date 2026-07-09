@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { logoutTeacher } from "@/app/teacher/actions";
+import { TeacherNav } from "@/components/teacher/TeacherNav";
 import { isTeacherAuthenticated } from "@/lib/auth/teacher";
 
 export default async function TeacherLayout({
@@ -20,30 +20,7 @@ export default async function TeacherLayout({
             School App
           </Link>
 
-          {isAuthenticated && (
-            <nav className="flex items-center gap-6 text-sm text-zinc-500">
-              <Link
-                href="/teacher/curriculum"
-                className="transition-colors hover:text-zinc-900"
-              >
-                Μαθήματα
-              </Link>
-              <Link
-                href="/teacher"
-                className="transition-colors hover:text-zinc-900"
-              >
-                Βαθμολόγιο
-              </Link>
-              <form action={logoutTeacher}>
-                <button
-                  type="submit"
-                  className="transition-colors hover:text-zinc-900"
-                >
-                  Έξοδος
-                </button>
-              </form>
-            </nav>
-          )}
+          {isAuthenticated && <TeacherNav />}
         </div>
       </header>
 

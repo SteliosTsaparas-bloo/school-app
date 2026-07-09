@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { GradeSpreadsheet } from "@/components/teacher/GradeSpreadsheet";
-import { StudentsTable } from "@/components/teacher/StudentsTable";
 import { getSpreadsheetData, getSubjects } from "@/lib/data/grades";
 import { getAllStudents } from "@/lib/data/students";
 
@@ -28,7 +27,7 @@ export default async function TeacherDashboardPage({ searchParams }: TeacherPage
     }
   } catch {
     configError =
-      "Δεν ήταν δυνατή η σύνδεση με τη βάση. Βεβαιωθείτε ότι έχετε τρέξει το migration_003_spreadsheet_grades.sql.";
+      "Δεν ήταν δυνατή η σύνδεση με τη βάση. Βεβαιωθείτε ότι έχετε τρέξει το migration_005_subcategory_grades.sql.";
     students = [];
     subjects = [];
   }
@@ -47,8 +46,8 @@ export default async function TeacherDashboardPage({ searchParams }: TeacherPage
           Βαθμολόγιο
         </h1>
         <p className="mt-4 max-w-2xl text-base font-light text-zinc-600">
-          Καταχωρήστε βαθμούς ανά μάθημα σε spreadsheet περιβάλλον. Κάθε στήλη
-          αντιπροσωπεύει μια ημερομηνία ελέγχου.
+          Καταχωρήστε βαθμούς ανά μάθημα και υποκατηγορία. Κάθε στήλη
+          αντιπροσωπεύει μια υποκατηγορία του μαθήματος.
         </p>
       </header>
 
@@ -78,27 +77,6 @@ export default async function TeacherDashboardPage({ searchParams }: TeacherPage
           </div>
         )
       )}
-
-      <section className="mt-20 border-t border-zinc-200 pt-16">
-        <div className="mb-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-light tracking-tight text-zinc-900">
-              Μαθητές
-            </h2>
-            <p className="mt-2 text-sm font-light text-zinc-500">
-              Διαχείριση μαθητών, QR codes και προσωπικών συνδέσμων.
-            </p>
-          </div>
-          <Link
-            href="/teacher/curriculum"
-            className="border border-zinc-200 bg-white px-5 py-2.5 text-center text-sm tracking-wide text-zinc-700 transition-colors hover:border-zinc-300 hover:text-zinc-900"
-          >
-            Διαχείριση Μαθημάτων
-          </Link>
-        </div>
-
-        <StudentsTable students={students} />
-      </section>
     </div>
   );
 }

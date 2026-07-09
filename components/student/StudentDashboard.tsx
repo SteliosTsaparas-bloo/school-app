@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { SubjectWithAssessments } from "@/lib/types";
+import type { SubjectWithGrades } from "@/lib/types";
 import { SubjectPanel } from "./SubjectPanel";
 
 type StudentDashboardProps = {
   studentName: string;
-  subjects: SubjectWithAssessments[];
+  subjects: SubjectWithGrades[];
 };
 
 export function StudentDashboard({

@@ -1,13 +1,13 @@
-import type { SubjectWithAssessments } from "@/lib/types";
-import { formatGrade, formatShortDate } from "@/lib/utils/grades";
+import type { SubjectWithGrades } from "@/lib/types";
+import { formatGrade } from "@/lib/utils/grades";
 
 type SubjectPanelProps = {
-  subject: SubjectWithAssessments;
+  subject: SubjectWithGrades;
 };
 
 export function SubjectPanel({ subject }: SubjectPanelProps) {
-  const grades = subject.assessments
-    .map((assessment) => assessment.grade)
+  const grades = subject.subcategories
+    .map((subcategory) => subcategory.grade)
     .filter((grade): grade is number => grade !== null);
 
   const subjectAverage =
@@ -37,32 +37,32 @@ export function SubjectPanel({ subject }: SubjectPanelProps) {
 
       <div className="space-y-4">
         <p className="text-sm tracking-[0.15em] text-zinc-500 uppercase">
-          Ιστορικό βαθμολογίας
+          Βαθμολογία ανά υποκατηγορία
         </p>
 
-        {subject.assessments.length === 0 ? (
+        {subject.subcategories.length === 0 ? (
           <p className="text-lg font-light text-zinc-400 italic">
             Δεν υπάρχουν καταχωρήσεις ακόμα για αυτό το μάθημα.
           </p>
         ) : (
           <ul className="divide-y divide-zinc-100 border border-zinc-200 bg-white">
-            {subject.assessments.map((assessment) => (
+            {subject.subcategories.map((subcategory) => (
               <li
-                key={assessment.assessment_date}
+                key={subcategory.id}
                 className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <p className="text-sm text-zinc-500">
-                    {formatShortDate(assessment.assessment_date)}
+                  <p className="text-base font-light text-zinc-900">
+                    {subcategory.name}
                   </p>
-                  {assessment.comments && (
+                  {subcategory.comments && (
                     <p className="mt-2 max-w-prose text-sm font-light leading-relaxed text-zinc-700">
-                      {assessment.comments}
+                      {subcategory.comments}
                     </p>
                   )}
                 </div>
                 <p className="text-3xl font-extralight tabular-nums text-zinc-900">
-                  {formatGrade(assessment.grade)}
+                  {formatGrade(subcategory.grade)}
                 </p>
               </li>
             ))}

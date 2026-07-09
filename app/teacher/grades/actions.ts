@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { isTeacherAuthenticated } from "@/lib/auth/teacher";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -8,11 +7,6 @@ export type GradeActionResult = {
   error?: string;
   success?: boolean;
 };
-
-function revalidateGradePaths() {
-  revalidatePath("/teacher");
-  revalidatePath("/student/[token]", "page");
-}
 
 function parseGradeValue(value: string) {
   const trimmed = value.trim();
@@ -30,8 +24,7 @@ function parseGradeValue(value: string) {
 
 export async function upsertGradeCell(input: {
   studentId: string;
-  subjectId: string;
-  assessmentDate: string;
+  subcategoryId: string;
   grade: string;
   comments: string;
 }): Promise<GradeActionResult> {
@@ -51,14 +44,12 @@ export async function upsertGradeCell(input: {
       .from("grades")
       .delete()
       .eq("student_id", input.studentId)
-      .eq("subject_id", input.subjectId)
-      .eq("assessment_date", input.assessmentDate);
+      .eq("subcategory_id", input.subcategoryId);
 
     if (error) {
       return { error: "Αποτυχία διαγραφής κελιού." };
     }
 
-    revalidateGradePaths();
     return { success: true };
   }
 
@@ -69,25 +60,22 @@ export async function upsertGradeCell(input: {
   const { error } = await supabase.from("grades").upsert(
     {
       student_id: input.studentId,
-      subject_id: input.subjectId,
-      assessment_date: input.assessmentDate,
+      subcategory_id: input.subcategoryId,
       grade,
       comments: input.comments.trim() || null,
     },
-    { onConflict: "student_id,subject_id,assessment_date" },
+    { onConflict: "student_id,subcategory_id" },
   );
 
   if (error) {
     return { error: "Αποτυχία αποθήκευσης κελιού." };
   }
 
-  revalidateGradePaths();
   return { success: true };
 }
 
 export async function upsertGradeColumn(input: {
-  subjectId: string;
-  assessmentDate: string;
+  subcategoryId: string;
   rows: Array<{
     studentId: string;
     grade: string;
@@ -101,8 +89,7 @@ export async function upsertGradeColumn(input: {
   for (const row of input.rows) {
     const result = await upsertGradeCell({
       studentId: row.studentId,
-      subjectId: input.subjectId,
-      assessmentDate: input.assessmentDate,
+      subcategoryId: input.subcategoryId,
       grade: row.grade,
       comments: row.comments,
     });
@@ -112,51 +99,5 @@ export async function upsertGradeColumn(input: {
     }
   }
 
-  revalidateGradePaths();
-  return { success: true };
-}
-
-export async function updateColumnDate(input: {
-  subjectId: string;
-  oldDate: string;
-  newDate: string;
-}): Promise<GradeActionResult> {
-  if (!(await isTeacherAuthenticated())) {
-    return { error: "Μη εξουσιοδοτημένη πρόσβαση." };
-  }
-
-  if (!input.newDate.trim()) {
-    return { error: "Η ημερομηνία είναι υποχρεωτική." };
-  }
-
-  if (input.oldDate === input.newDate) {
-    return { success: true };
-  }
-
-  const supabase = createAdminClient();
-
-  const { data: conflict } = await supabase
-    .from("grades")
-    .select("id")
-    .eq("subject_id", input.subjectId)
-    .eq("assessment_date", input.newDate)
-    .limit(1)
-    .maybeSingle();
-
-  if (conflict) {
-    return { error: "Υπάρχει ήδη στήλη με αυτή την ημερομηνία." };
-  }
-
-  const { error } = await supabase
-    .from("grades")
-    .update({ assessment_date: input.newDate })
-    .eq("subject_id", input.subjectId)
-    .eq("assessment_date", input.oldDate);
-
-  if (error) {
-    return { error: "Αποτυχία ενημέρωσης ημερομηνίας στήλης." };
-  }
-
-  revalidateGradePaths();
   return { success: true };
 }
