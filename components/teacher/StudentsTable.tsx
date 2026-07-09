@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { StudentWithGrades } from "@/lib/data/students";
+import type { StudentRow } from "@/lib/data/students";
 import { getStudentUrl } from "@/lib/utils/url";
 import { AddStudentModal } from "./AddStudentModal";
 import { DeleteStudentModal } from "./DeleteStudentModal";
 import { EditStudentModal } from "./EditStudentModal";
-import { GradeModal } from "./GradeModal";
 import { QrLinkModal } from "./QrLinkModal";
+import { StudentGradesModal } from "./StudentGradesModal";
 
 type StudentsTableProps = {
-  students: StudentWithGrades[];
+  students: StudentRow[];
 };
 
 function formatDate(dateString: string) {
@@ -21,38 +21,30 @@ function formatDate(dateString: string) {
   }).format(new Date(dateString));
 }
 
-function sortStudents(students: StudentWithGrades[]) {
+function sortStudents(students: StudentRow[]) {
   return [...students].sort((a, b) => a.name.localeCompare(b.name, "el"));
 }
 
 export function StudentsTable({ students: initialStudents }: StudentsTableProps) {
   const [students, setStudents] = useState(initialStudents);
-  const [qrStudent, setQrStudent] = useState<StudentWithGrades | null>(null);
-  const [gradeStudent, setGradeStudent] = useState<StudentWithGrades | null>(
-    null,
-  );
-  const [editStudent, setEditStudent] = useState<StudentWithGrades | null>(
-    null,
-  );
-  const [deleteStudent, setDeleteStudent] = useState<StudentWithGrades | null>(
-    null,
-  );
+  const [qrStudent, setQrStudent] = useState<StudentRow | null>(null);
+  const [gradeStudent, setGradeStudent] = useState<StudentRow | null>(null);
+  const [editStudent, setEditStudent] = useState<StudentRow | null>(null);
+  const [deleteStudent, setDeleteStudent] = useState<StudentRow | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   useEffect(() => {
     setStudents(initialStudents);
   }, [initialStudents]);
 
-  function handleStudentCreated(student: StudentWithGrades) {
+  function handleStudentCreated(student: StudentRow) {
     setStudents((current) => sortStudents([...current, student]));
     setQrStudent(student);
   }
 
-  function handleStudentUpdated(student: StudentWithGrades) {
+  function handleStudentUpdated(student: StudentRow) {
     setStudents((current) =>
-      sortStudents(
-        current.map((entry) => (entry.id === student.id ? student : entry)),
-      ),
+      sortStudents(current.map((entry) => (entry.id === student.id ? student : entry))),
     );
   }
 
@@ -77,9 +69,6 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
           <p className="text-lg font-light text-zinc-600">
             Δεν υπάρχουν μαθητές ακόμα στη βάση.
           </p>
-          <p className="mt-2 text-sm text-zinc-400">
-            Πατήστε «Προσθήκη Μαθητή» για να ξεκινήσετε.
-          </p>
         </div>
       ) : (
         <div className="overflow-x-auto border border-zinc-200 bg-white">
@@ -99,17 +88,9 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
             </thead>
             <tbody>
               {students.map((student) => (
-                <tr
-                  key={student.id}
-                  className="border-b border-zinc-100 last:border-b-0"
-                >
+                <tr key={student.id} className="border-b border-zinc-100 last:border-b-0">
                   <td className="px-6 py-5">
-                    <p className="text-base font-light text-zinc-900">
-                      {student.name}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-400">
-                      {student.grades.length} / 7 μαθήματα
-                    </p>
+                    <p className="text-base font-light text-zinc-900">{student.name}</p>
                   </td>
                   <td className="px-6 py-5 text-sm text-zinc-500">
                     {formatDate(student.created_at)}
@@ -193,11 +174,10 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
       )}
 
       {gradeStudent && (
-        <GradeModal
+        <StudentGradesModal
           key={gradeStudent.id}
           studentId={gradeStudent.id}
           studentName={gradeStudent.name}
-          grades={gradeStudent.grades}
           isOpen={Boolean(gradeStudent)}
           onClose={() => setGradeStudent(null)}
         />

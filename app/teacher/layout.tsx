@@ -23,6 +23,12 @@ export default async function TeacherLayout({
           {isAuthenticated && (
             <nav className="flex items-center gap-6 text-sm text-zinc-500">
               <Link
+                href="/teacher/curriculum"
+                className="transition-colors hover:text-zinc-900"
+              >
+                Μαθήματα
+              </Link>
+              <Link
                 href="/teacher"
                 className="transition-colors hover:text-zinc-900"
               >

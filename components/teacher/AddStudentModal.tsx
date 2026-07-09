@@ -2,12 +2,12 @@
 
 import { useActionState, useEffect } from "react";
 import { createStudent } from "@/app/teacher/actions";
-import type { StudentWithGrades } from "@/lib/data/students";
+import type { StudentRow } from "@/lib/data/students";
 
 type AddStudentModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onStudentCreated: (student: StudentWithGrades) => void;
+  onStudentCreated: (student: StudentRow) => void;
 };
 
 export function AddStudentModal({

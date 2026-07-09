@@ -1,36 +1,16 @@
-import type { Grade, Student } from "@/lib/types";
+import type { Student } from "@/lib/types";
+import {
+  getCurriculum,
+  parseStudentDashboardPayload,
+  buildSubjectsWithGrades,
+} from "@/lib/data/curriculum";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-export type StudentWithGrades = Student & {
-  grades: Grade[];
-};
+export type StudentRow = Student;
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function parseDashboard(payload: {
-  student: Student;
-  grades: Array<{
-    subject: Grade["subject"];
-    grade: number | string | null;
-    comments: string | null;
-    updated_at: string;
-  }>;
-}) {
-  return {
-    student: payload.student,
-    grades: (payload.grades ?? []).map((entry) => ({
-      subject: entry.subject,
-      grade:
-        entry.grade === null || entry.grade === undefined
-          ? null
-          : Number(entry.grade),
-      comments: entry.comments,
-      updated_at: entry.updated_at,
-    })),
-  };
-}
 
 async function getStudentDashboardViaAdmin(token: string) {
   const supabase = createAdminClient();
@@ -45,25 +25,36 @@ async function getStudentDashboardViaAdmin(token: string) {
     return null;
   }
 
-  const { data: grades, error: gradesError } = await supabase
-    .from("grades")
-    .select("subject, grade, comments, updated_at")
-    .eq("student_id", student.id)
-    .order("subject");
+  const curriculum = await getCurriculum();
+  const { data: entries, error: entriesError } = await supabase
+    .from("grade_entries")
+    .select("id, subcategory_id, grade, entry_date")
+    .eq("student_id", student.id);
 
-  if (gradesError) {
-    return { student, grades: [] };
+  if (entriesError) {
+    return { student, subjects: curriculum.map((subject) => ({
+      ...subject,
+      subcategories: subject.subcategories.map((subcategory) => ({
+        id: subcategory.id,
+        name: subcategory.name,
+        sort_order: subcategory.sort_order,
+        average: null,
+        entries: [],
+      })),
+    })) };
   }
 
-  return parseDashboard({
-    student,
-    grades: (grades ?? []).map((entry) => ({
-      subject: entry.subject as Grade["subject"],
+  const subjects = buildSubjectsWithGrades(
+    curriculum,
+    (entries ?? []).map((entry) => ({
+      id: entry.id,
+      subcategory_id: entry.subcategory_id,
       grade: entry.grade,
-      comments: entry.comments,
-      updated_at: entry.updated_at,
+      entry_date: entry.entry_date,
     })),
-  });
+  );
+
+  return { student, subjects };
 }
 
 async function getStudentDashboardViaRpc(token: string) {
@@ -77,16 +68,8 @@ async function getStudentDashboardViaRpc(token: string) {
     return null;
   }
 
-  return parseDashboard(
-    data as {
-      student: Student;
-      grades: Array<{
-        subject: Grade["subject"];
-        grade: number | string | null;
-        comments: string | null;
-        updated_at: string;
-      }>;
-    },
+  return parseStudentDashboardPayload(
+    data as Parameters<typeof parseStudentDashboardPayload>[0],
   );
 }
 
@@ -103,7 +86,7 @@ export async function getStudentDashboard(token: string) {
       return dashboard;
     }
   } catch {
-    // Fall back to RPC when service role key is unavailable (e.g. local dev).
+    // Fall back to RPC when service role key is unavailable.
   }
 
   return getStudentDashboardViaRpc(normalizedToken);
@@ -114,28 +97,12 @@ export async function getAllStudents() {
 
   const { data, error } = await supabase
     .from("students")
-    .select(
-      "id, name, unique_token, created_at, grades(subject, grade, comments, updated_at)",
-    )
+    .select("id, name, unique_token, created_at")
     .order("name");
 
   if (error) {
     throw error;
   }
 
-  return (data ?? []).map((student) => ({
-    id: student.id,
-    name: student.name,
-    unique_token: student.unique_token,
-    created_at: student.created_at,
-    grades: (student.grades ?? []).map((entry) => ({
-      subject: entry.subject as Grade["subject"],
-      grade:
-        entry.grade === null || entry.grade === undefined
-          ? null
-          : Number(entry.grade),
-      comments: entry.comments,
-      updated_at: entry.updated_at,
-    })),
-  })) satisfies StudentWithGrades[];
+  return (data ?? []) satisfies StudentRow[];
 }

@@ -1,12 +1,3 @@
-export type Subject =
-  | "language"
-  | "math"
-  | "history"
-  | "science"
-  | "geography"
-  | "life_skills"
-  | "religion";
-
 export type Student = {
   id: string;
   name: string;
@@ -14,14 +5,45 @@ export type Student = {
   created_at: string;
 };
 
-export type Grade = {
-  subject: Subject;
-  grade: number | null;
-  comments: string | null;
-  updated_at: string;
+export type Subject = {
+  id: string;
+  name: string;
+  sort_order: number;
+};
+
+export type Subcategory = {
+  id: string;
+  subject_id: string;
+  name: string;
+  sort_order: number;
+};
+
+export type SubjectWithSubcategories = Subject & {
+  subcategories: Subcategory[];
+};
+
+export type GradeEntry = {
+  id: string;
+  grade: number;
+  entry_date: string;
+};
+
+export type SubcategoryWithGrades = {
+  id: string;
+  name: string;
+  sort_order: number;
+  average: number | null;
+  entries: GradeEntry[];
+};
+
+export type SubjectWithGrades = {
+  id: string;
+  name: string;
+  sort_order: number;
+  subcategories: SubcategoryWithGrades[];
 };
 
 export type StudentDashboard = {
   student: Student;
-  grades: Grade[];
+  subjects: SubjectWithGrades[];
 };

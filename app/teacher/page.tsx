@@ -1,10 +1,10 @@
 import { StudentsTable } from "@/components/teacher/StudentsTable";
-import { getAllStudents, type StudentWithGrades } from "@/lib/data/students";
+import { getAllStudents } from "@/lib/data/students";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherDashboardPage() {
-  let students: StudentWithGrades[] = [];
+  let students: Awaited<ReturnType<typeof getAllStudents>> = [];
   let configError: string | null = null;
 
   try {

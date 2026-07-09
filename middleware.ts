@@ -5,11 +5,11 @@ import { TEACHER_COOKIE } from "@/lib/auth/teacher";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/teacher/auth") {
+  if (pathname.startsWith("/teacher/auth")) {
     return NextResponse.next();
   }
 
-  if (pathname === "/teacher") {
+  if (pathname.startsWith("/teacher")) {
     const session = request.cookies.get(TEACHER_COOKIE)?.value;
     const validToken = process.env.TEACHER_AUTH_TOKEN;
 
@@ -24,5 +24,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/teacher", "/teacher/auth"],
+  matcher: ["/teacher/:path*"],
 };

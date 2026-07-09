@@ -2,13 +2,13 @@
 
 import { useActionState, useEffect } from "react";
 import { updateStudent } from "@/app/teacher/actions";
-import type { StudentWithGrades } from "@/lib/data/students";
+import type { StudentRow } from "@/lib/data/students";
 
 type EditStudentModalProps = {
-  student: StudentWithGrades;
+  student: StudentRow;
   isOpen: boolean;
   onClose: () => void;
-  onStudentUpdated: (student: StudentWithGrades) => void;
+  onStudentUpdated: (student: StudentRow) => void;
 };
 
 export function EditStudentModal({

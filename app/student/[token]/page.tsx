@@ -16,12 +16,12 @@ export default async function StudentPage({ params }: StudentPageProps) {
     notFound();
   }
 
-  const { student, grades } = dashboard;
+  const { student, subjects } = dashboard;
 
   return (
     <div className="min-h-screen bg-zinc-50">
       <div className="mx-auto max-w-5xl px-6 py-20 sm:px-10 sm:py-28">
-        <StudentDashboard studentName={student.name} grades={grades} />
+        <StudentDashboard studentName={student.name} subjects={subjects} />
       </div>
 
       <footer className="border-t border-zinc-200 bg-white">
