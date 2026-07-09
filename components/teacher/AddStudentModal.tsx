@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { createStudent } from "@/app/teacher/actions";
 import type { StudentRow } from "@/lib/data/students";
 
@@ -16,9 +16,13 @@ export function AddStudentModal({
   onStudentCreated,
 }: AddStudentModalProps) {
   const [state, formAction, isPending] = useActionState(createStudent, undefined);
+  const handledStudentId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      handledStudentId.current = null;
+      return;
+    }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -36,11 +40,13 @@ export function AddStudentModal({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (state?.success && state.student) {
-      onStudentCreated(state.student);
-      onClose();
-    }
-  }, [state, onClose, onStudentCreated]);
+    if (!isOpen || !state?.success || !state.student) return;
+    if (handledStudentId.current === state.student.id) return;
+
+    handledStudentId.current = state.student.id;
+    onStudentCreated(state.student);
+    onClose();
+  }, [isOpen, state, onClose, onStudentCreated]);
 
   if (!isOpen) return null;
 

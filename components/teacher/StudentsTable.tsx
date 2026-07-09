@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import type { StudentRow } from "@/lib/data/students";
 import { getStudentUrl } from "@/lib/utils/url";
 import { AddStudentModal } from "./AddStudentModal";
@@ -24,29 +25,40 @@ function sortStudents(students: StudentRow[]) {
 }
 
 export function StudentsTable({ students: initialStudents }: StudentsTableProps) {
+  const router = useRouter();
+  const [, startRefresh] = useTransition();
   const [students, setStudents] = useState(initialStudents);
   const [qrStudent, setQrStudent] = useState<StudentRow | null>(null);
   const [editStudent, setEditStudent] = useState<StudentRow | null>(null);
   const [deleteStudent, setDeleteStudent] = useState<StudentRow | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [addModalKey, setAddModalKey] = useState(0);
 
   useEffect(() => {
     setStudents(initialStudents);
   }, [initialStudents]);
 
-  function handleStudentCreated(student: StudentRow) {
+  const handleStudentCreated = useCallback((student: StudentRow) => {
     setStudents((current) => sortStudents([...current, student]));
     setQrStudent(student);
-  }
+    startRefresh(() => router.refresh());
+  }, [router]);
 
-  function handleStudentUpdated(student: StudentRow) {
+  const handleStudentUpdated = useCallback((student: StudentRow) => {
     setStudents((current) =>
       sortStudents(current.map((entry) => (entry.id === student.id ? student : entry))),
     );
-  }
+    startRefresh(() => router.refresh());
+  }, [router]);
 
-  function handleStudentDeleted(studentId: string) {
+  const handleStudentDeleted = useCallback((studentId: string) => {
     setStudents((current) => current.filter((entry) => entry.id !== studentId));
+    startRefresh(() => router.refresh());
+  }, [router]);
+
+  function openAddModal() {
+    setAddModalKey((current) => current + 1);
+    setIsAddOpen(true);
   }
 
   return (
@@ -54,7 +66,7 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
       <div className="mb-6 flex justify-end">
         <button
           type="button"
-          onClick={() => setIsAddOpen(true)}
+          onClick={openAddModal}
           className="border border-zinc-900 px-5 py-2.5 text-sm tracking-wide text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
         >
           + Προσθήκη Μαθητή
@@ -129,6 +141,7 @@ export function StudentsTable({ students: initialStudents }: StudentsTableProps)
       )}
 
       <AddStudentModal
+        key={addModalKey}
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onStudentCreated={handleStudentCreated}

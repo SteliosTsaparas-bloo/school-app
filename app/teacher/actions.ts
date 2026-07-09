@@ -1,7 +1,6 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { StudentRow } from "@/lib/data/students";
 import {
@@ -63,9 +62,15 @@ export async function createStudent(
     return { error: "Αποτυχία αποθήκευσης μαθητή. Δοκιμάστε ξανά." };
   }
 
-  revalidatePath("/teacher");
-
-  return { success: true, student: data };
+  return {
+    success: true,
+    student: {
+      id: data.id,
+      name: data.name,
+      unique_token: data.unique_token,
+      created_at: data.created_at,
+    },
+  };
 }
 
 export async function updateStudent(
@@ -99,9 +104,15 @@ export async function updateStudent(
     return { error: "Αποτυχία ενημέρωσης. Δοκιμάστε ξανά." };
   }
 
-  revalidatePath("/teacher");
-
-  return { success: true, student: data };
+  return {
+    success: true,
+    student: {
+      id: data.id,
+      name: data.name,
+      unique_token: data.unique_token,
+      created_at: data.created_at,
+    },
+  };
 }
 
 export async function deleteStudent(
@@ -124,8 +135,6 @@ export async function deleteStudent(
   if (error) {
     return { error: "Αποτυχία διαγραφής. Δοκιμάστε ξανά." };
   }
-
-  revalidatePath("/teacher");
 
   return { success: true, studentId };
 }
