@@ -14,7 +14,9 @@ export default async function TeacherDashboardPage({ searchParams }: TeacherPage
 
   let students: Awaited<ReturnType<typeof getAllStudents>> = [];
   let subjects: Awaited<ReturnType<typeof getSubjects>> = [];
-  let spreadsheet = { columns: [] as Awaited<ReturnType<typeof getSpreadsheetData>>["columns"] };
+  let spreadsheet = {
+    subcategories: [] as Awaited<ReturnType<typeof getSpreadsheetData>>["subcategories"],
+  };
   let configError: string | null = null;
 
   try {
@@ -27,7 +29,7 @@ export default async function TeacherDashboardPage({ searchParams }: TeacherPage
     }
   } catch {
     configError =
-      "Δεν ήταν δυνατή η σύνδεση με τη βάση. Βεβαιωθείτε ότι έχετε τρέξει το migration_005_subcategory_grades.sql.";
+      "Δεν ήταν δυνατή η σύνδεση με τη βάση. Βεβαιωθείτε ότι έχετε τρέξει το migration_006_subcategory_date_grades.sql.";
     students = [];
     subjects = [];
   }
@@ -46,8 +48,8 @@ export default async function TeacherDashboardPage({ searchParams }: TeacherPage
           Βαθμολόγιο
         </h1>
         <p className="mt-4 max-w-2xl text-base font-light text-zinc-600">
-          Καταχωρήστε βαθμούς ανά μάθημα και υποκατηγορία. Κάθε στήλη
-          αντιπροσωπεύει μια υποκατηγορία του μαθήματος.
+          Κάθε υποκατηγορία έχει τον δικό της πίνακα. Προσθέτετε στήλες ημερομηνίας
+          και καταχωρείτε βαθμούς ανά μαθητή.
         </p>
       </header>
 
@@ -62,7 +64,7 @@ export default async function TeacherDashboardPage({ searchParams }: TeacherPage
           students={students}
           subjects={subjects}
           initialSubjectId={activeSubjectId}
-          initialColumns={spreadsheet.columns}
+          initialSubcategories={spreadsheet.subcategories}
         />
       ) : (
         !configError && (

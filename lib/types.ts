@@ -26,25 +26,33 @@ export type GradeRecord = {
   id: string;
   student_id: string;
   subcategory_id: string;
+  assessment_date: string;
   grade: number | null;
   comments: string | null;
   updated_at: string;
 };
 
-export type SubcategoryGrade = {
+export type GradeEntry = {
+  id: string;
+  assessment_date: string;
+  grade: number | null;
+  comments: string | null;
+  updated_at: string;
+};
+
+export type SubcategoryWithGrades = {
   id: string;
   name: string;
   sort_order: number;
-  grade: number | null;
-  comments: string | null;
-  updated_at: string | null;
+  average: number | null;
+  entries: GradeEntry[];
 };
 
 export type SubjectWithGrades = {
   id: string;
   name: string;
   sort_order: number;
-  subcategories: SubcategoryGrade[];
+  subcategories: SubcategoryWithGrades[];
 };
 
 export type StudentDashboard = {
@@ -58,15 +66,20 @@ export type SpreadsheetCell = {
   comments: string;
 };
 
-export type SpreadsheetColumn = {
+export type DateColumn = {
+  assessment_date: string;
+  cells: Record<string, SpreadsheetCell>;
+};
+
+export type SubcategorySpreadsheet = {
   subcategory_id: string;
   subcategory_name: string;
   sort_order: number;
-  cells: Record<string, SpreadsheetCell>;
+  columns: DateColumn[];
 };
 
 export type SpreadsheetData = {
   students: Student[];
   subjects: Subject[];
-  columns: SpreadsheetColumn[];
+  subcategories: SubcategorySpreadsheet[];
 };

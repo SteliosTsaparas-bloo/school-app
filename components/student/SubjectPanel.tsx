@@ -1,19 +1,21 @@
 import type { SubjectWithGrades } from "@/lib/types";
-import { formatGrade } from "@/lib/utils/grades";
+import { formatGrade, formatShortDate } from "@/lib/utils/grades";
 
 type SubjectPanelProps = {
   subject: SubjectWithGrades;
 };
 
 export function SubjectPanel({ subject }: SubjectPanelProps) {
-  const grades = subject.subcategories
-    .map((subcategory) => subcategory.grade)
-    .filter((grade): grade is number => grade !== null);
+  const allGrades = subject.subcategories.flatMap((subcategory) =>
+    subcategory.entries
+      .map((entry) => entry.grade)
+      .filter((grade): grade is number => grade !== null),
+  );
 
   const subjectAverage =
-    grades.length === 0
+    allGrades.length === 0
       ? null
-      : Math.round((grades.reduce((sum, grade) => sum + grade, 0) / grades.length) * 10) /
+      : Math.round((allGrades.reduce((sum, grade) => sum + grade, 0) / allGrades.length) * 10) /
         10;
 
   return (
@@ -35,38 +37,54 @@ export function SubjectPanel({ subject }: SubjectPanelProps) {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <p className="text-sm tracking-[0.15em] text-zinc-500 uppercase">
-          Βαθμολογία ανά υποκατηγορία
-        </p>
-
+      <div className="space-y-10">
         {subject.subcategories.length === 0 ? (
           <p className="text-lg font-light text-zinc-400 italic">
             Δεν υπάρχουν καταχωρήσεις ακόμα για αυτό το μάθημα.
           </p>
         ) : (
-          <ul className="divide-y divide-zinc-100 border border-zinc-200 bg-white">
-            {subject.subcategories.map((subcategory) => (
-              <li
-                key={subcategory.id}
-                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-base font-light text-zinc-900">
-                    {subcategory.name}
-                  </p>
-                  {subcategory.comments && (
-                    <p className="mt-2 max-w-prose text-sm font-light leading-relaxed text-zinc-700">
-                      {subcategory.comments}
-                    </p>
-                  )}
-                </div>
-                <p className="text-3xl font-extralight tabular-nums text-zinc-900">
-                  {formatGrade(subcategory.grade)}
+          subject.subcategories.map((subcategory) => (
+            <div key={subcategory.id} className="space-y-4">
+              <div className="flex items-end justify-between gap-4 border-b border-zinc-100 pb-3">
+                <p className="text-base font-light text-zinc-900">{subcategory.name}</p>
+                <p className="text-sm text-zinc-500">
+                  Μ.Ο.{" "}
+                  <span className="tabular-nums text-zinc-900">
+                    {formatGrade(subcategory.average)}
+                  </span>
                 </p>
-              </li>
-            ))}
-          </ul>
+              </div>
+
+              {subcategory.entries.length === 0 ? (
+                <p className="text-sm font-light text-zinc-400 italic">
+                  Δεν υπάρχουν καταχωρήσεις.
+                </p>
+              ) : (
+                <ul className="divide-y divide-zinc-100 border border-zinc-200 bg-white">
+                  {subcategory.entries.map((entry) => (
+                    <li
+                      key={entry.id}
+                      className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="text-sm text-zinc-500">
+                          {formatShortDate(entry.assessment_date)}
+                        </p>
+                        {entry.comments && (
+                          <p className="mt-2 max-w-prose text-sm font-light leading-relaxed text-zinc-700">
+                            {entry.comments}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-3xl font-extralight tabular-nums text-zinc-900">
+                        {formatGrade(entry.grade)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))
         )}
       </div>
     </section>
