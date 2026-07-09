@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StudentsTable } from "@/components/teacher/StudentsTable";
 import { getAllStudents } from "@/lib/data/students";
 
@@ -29,6 +30,21 @@ export default async function TeacherDashboardPage() {
           κάθε μαθητή με τους γονείς.
         </p>
       </header>
+
+      <div className="mb-10 flex flex-col gap-3 border border-zinc-200 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-zinc-900">Μαθήματα & Υποκατηγορίες</p>
+          <p className="mt-1 text-sm font-light text-zinc-500">
+            Προσθήκη, επεξεργασία και διαγραφή μαθημάτων και υποκατηγοριών.
+          </p>
+        </div>
+        <Link
+          href="/teacher/curriculum"
+          className="border border-zinc-900 px-5 py-2.5 text-center text-sm tracking-wide text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+        >
+          Διαχείριση Μαθημάτων
+        </Link>
+      </div>
 
       {configError && (
         <div className="mb-8 border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
