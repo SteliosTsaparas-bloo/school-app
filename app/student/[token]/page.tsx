@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { StudentDashboard } from "@/components/student/StudentDashboard";
 import { getStudentDashboard } from "@/lib/data/students";
 
+export const dynamic = "force-dynamic";
+
 type StudentPageProps = {
   params: Promise<{ token: string }>;
 };
